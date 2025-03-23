@@ -56,4 +56,4 @@ No installation required! Simply open the index.html file in a web browser.
 
 ## Credits
 
-Created by [Your Name] 
+Created by miniminkus 
