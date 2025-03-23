@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Tim Loves Wieners</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <script>
+        // Wait for the game to be fully loaded before enabling start
+        let gameInitialized = false;
+        
+        // Safari-specific compatibility fixes
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log("DOM loaded - setting up compatibility mode");
+            const startButton = document.getElementById('start-button');
+            
+            if (startButton) {
+                // Initially disable the button until game is ready
+                startButton.disabled = true;
+                startButton.textContent = "LOADING...";
+                
+                // Remove inline handlers to avoid double-triggering
+                startButton.removeAttribute('onclick');
+                startButton.removeAttribute('ontouchstart');
+                startButton.removeAttribute('ontouchend');
+                startButton.removeAttribute('onpointerdown');
+                
+                // Simple start function that just switches screens
+                const startGameSafari = function(e) {
+                    if (e) {
+                        e.preventDefault();
+                    }
+                    console.log('Start button clicked, starting game...');
+                    
+                    // Basic screen transition
+                    document.getElementById('intro-screen').style.display = 'none';
+                    document.getElementById('game-screen').style.display = 'block';
+                    
+                    // Manually initialize game if needed
+                    if (window.init && !window.gameInitialized) {
+                        console.log("Calling init() directly");
+                        window.init();
+                    }
+                    
+                    // Start the game
+                    if (window.startGameFixed) {
+                        console.log("Calling startGameFixed()");
+                        window.startGameFixed();
+                    }
+                    
+                    return false;
+                };
+                
+                // Add event listeners
+                startButton.addEventListener('touchstart', startGameSafari, false);
+                startButton.addEventListener('click', startGameSafari);
+                
+                console.log('Safari compatibility mode enabled');
+                
+                // Enable button now instead of waiting
+                startButton.disabled = false;
+                startButton.textContent = "START";
+            }
+        });
+    </script>
+</head>
+<body>
+    <div id="game-container">
+        <div id="intro-screen" class="screen">
+            <h1>Tim Loves Wieners</h1>
+            <div id="intro-text"></div>
+            <button id="start-button">START</button>
+        </div>
+        
+        <div id="game-screen" class="screen">
+            <div id="hud">
+                <div id="spermidin-container" class="clearfix">
+                    <div style="overflow: hidden; margin-bottom: 5px;">
+                        <span id="spermidin-text">SPERMIDIN</span>
+                        <span id="spermidin-value">0/100</span>
+                    </div>
+                    <div id="spermidin-bar-wrapper" style="position: relative; width: 100%; height: 20px; background-color: #222; border: 3px solid #fff; border-radius: 4px; overflow: hidden;">
+                        <div id="spermidin-bar"></div>
+                    </div>
+                </div>
+                
+                <div id="health-bar-container" class="clearfix">
+                    <div style="overflow: hidden; margin-bottom: 5px;">
+                        <span id="health-text">HEALTH</span>
+                        <span id="health-value">100/100</span>
+                    </div>
+                    <div id="health-bar-wrapper" style="position: relative; width: 100%; height: 20px; background-color: #222; border: 3px solid #fff; border-radius: 4px; overflow: hidden;">
+                        <div id="health-bar"></div>
+                    </div>
+                </div>
+                
+                <div id="boss-health-container" class="clearfix">
+                    <div style="overflow: hidden; margin-bottom: 5px;">
+                        <div id="boss-label">BOSS</div>
+                        <span id="boss-health-value">200/200</span>
+                    </div>
+                    <div id="boss-health-bar-wrapper">
+                        <div id="boss-health-bar"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="game-story"></div>
+            
+            <canvas id="game-canvas"></canvas>
+            
+            <div id="keyboard-controls">
+                <p>WASD or ARROW KEYS: Move</p>
+                <p>SPACE: Shoot</p>
+            </div>
+            
+            <div id="controls">
+                <div id="joystick-container">
+                    <div id="joystick-base">
+                        <div id="joystick-handle"></div>
+                    </div>
+                </div>
+                
+                <div id="shoot-button">
+                    <span>SHOOT</span>
+                </div>
+            </div>
+        </div>
+        
+        <div id="victory-screen" class="screen">
+            <h2>VICTORY!</h2>
+            <p>Tim defeated the big wiener and can finally get some sleep!</p>
+            <div id="sleep-animation"></div>
+            <button id="play-again-button">PLAY AGAIN</button>
+        </div>
+        
+        <div id="game-over-screen" class="screen">
+            <h2>GAME OVER</h2>
+            <p>Tim couldn't get enough sleep...</p>
+            <button id="retry-button">TRY AGAIN</button>
+        </div>
+    </div>
+
+    <!-- Simple Joystick Overlay - completely separate from the game DOM -->
+    <div id="joystick-overlay">
+        <div id="overlay-joystick-base">
+            <div id="overlay-joystick-handle"></div>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html> 

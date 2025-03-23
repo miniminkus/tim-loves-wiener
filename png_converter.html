@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>PNG to Canvas Converter</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+        }
+        .input-area, .output-area {
+            margin-bottom: 20px;
+        }
+        textarea {
+            width: 100%;
+            height: 300px;
+            font-family: monospace;
+            border: 1px solid #ddd;
+            padding: 10px;
+            resize: vertical;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 10px 0;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .preview {
+            margin: 20px 0;
+            padding: 10px;
+            border: 1px dashed #ddd;
+            text-align: center;
+        }
+        .instructions {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-left: 3px solid #4CAF50;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>PNG to Canvas Code Converter</h1>
+        
+        <div class="instructions">
+            <h3>Instructions:</h3>
+            <p>1. Upload a PNG image file</p>
+            <p>2. The tool will analyze the image and generate JavaScript code that draws it on a canvas</p>
+            <p>3. Copy the generated code and use it in your game.js file</p>
+            <p>4. Use the download button to save the code for future use</p>
+        </div>
+        
+        <div class="input-area">
+            <h2>Upload PNG</h2>
+            <input type="file" id="imageInput" accept="image/png">
+        </div>
+        
+        <div class="preview">
+            <h2>Image Preview</h2>
+            <canvas id="previewCanvas" width="300" height="300" style="border:1px solid #000; background-color: #fff;"></canvas>
+        </div>
+        
+        <div class="output-area">
+            <h2>Generated Canvas Code</h2>
+            <button id="copyBtn">Copy Code</button>
+            <button id="downloadBtn">Download Code</button>
+            <textarea id="outputCode" readonly></textarea>
+        </div>
+    </div>
+    
+    <script>
+        // Variables to store image data
+        let pixelData = [];
+        let imageWidth = 0;
+        let imageHeight = 0;
+        let lastLoadedImage = null; // Store the last loaded image for reprocessing
+        
+        // Function to simplify a color (reduce color depth)
+        function simplifyColor(r, g, b, colorDepth) {
+            // For 8-bit color depth (3 bits R, 3 bits G, 2 bits B)
+            if (colorDepth === 8) {
+                r = Math.round(r / 36) * 36;
+                g = Math.round(g / 36) * 36;
+                b = Math.round(b / 85) * 85;
+            }
+            // For 6-bit color depth (2 bits per channel)
+            else if (colorDepth === 6) {
+                r = Math.round(r / 85) * 85;
+                g = Math.round(g / 85) * 85;
+                b = Math.round(b / 85) * 85;
+            }
+            // For 4-bit color depth (16 colors - fixed palette)
+            else if (colorDepth === 4) {
+                // Standard 16-color palette
+                const palette = [
+                    [0, 0, 0],       // Black
+                    [128, 0, 0],     // Dark Red
+                    [0, 128, 0],     // Dark Green
+                    [128, 128, 0],   // Dark Yellow
+                    [0, 0, 128],     // Dark Blue
+                    [128, 0, 128],   // Dark Magenta
+                    [0, 128, 128],   // Dark Cyan
+                    [192, 192, 192], // Light Gray
+                    [128, 128, 128], // Dark Gray
+                    [255, 0, 0],     // Red
+                    [0, 255, 0],     // Green
+                    [255, 255, 0],   // Yellow
+                    [0, 0, 255],     // Blue
+                    [255, 0, 255],   // Magenta
+                    [0, 255, 255],   // Cyan
+                    [255, 255, 255]  // White
+                ];
+                
+                // Find the closest color from the palette
+                let minDistance = Infinity;
+                let closestColor = [0, 0, 0];
+                
+                for (const color of palette) {
+                    const distance = Math.sqrt(
+                        Math.pow(r - color[0], 2) +
+                        Math.pow(g - color[1], 2) +
+                        Math.pow(b - color[2], 2)
+                    );
+                    
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        closestColor = color;
+                    }
+                }
+                
+                [r, g, b] = closestColor;
+            }
+            
+            return [r, g, b];
+        }
+        
+        // Function to analyze an image and generate its pixel data
+        function analyzeImage(image) {
+            // Store reference to the image for reprocessing
+            lastLoadedImage = image;
+            
+            // Create a temporary canvas to read the image data
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Get original image dimensions
+            const originalWidth = image.width;
+            const originalHeight = image.height;
+            
+            // Add controls to the UI if they don't exist
+            if (!document.getElementById('pixelReduction')) {
+                const controlsDiv = document.createElement('div');
+                controlsDiv.innerHTML = `
+                    <div style="margin: 15px 0; padding: 10px; background-color: #f0f0f0; border-radius: 5px;">
+                        <h3 style="margin-top: 0;">Image Simplification Options</h3>
+                        
+                        <div style="margin-bottom: 10px;">
+                            <label for="pixelReduction">Pixel Reduction: </label>
+                            <select id="pixelReduction">
+                                <option value="1">None (original size)</option>
+                                <option value="2" selected>Medium (50% reduction)</option>
+                                <option value="3">High (67% reduction)</option>
+                                <option value="4">Very high (75% reduction)</option>
+                            </select>
+                        </div>
+                        
+                        <div style="margin-bottom: 10px;">
+                            <label for="colorDepth">Color Simplification: </label>
+                            <select id="colorDepth">
+                                <option value="24">None (24-bit, full color)</option>
+                                <option value="8" selected>Medium (8-bit, 256 colors)</option>
+                                <option value="6">High (6-bit, 64 colors)</option>
+                                <option value="4">Extreme (4-bit, 16 colors)</option>
+                            </select>
+                        </div>
+                        
+                        <button id="applySettings" style="margin-top: 5px; padding: 5px 10px;">Apply Settings</button>
+                    </div>
+                `;
+                
+                // Insert before the preview
+                const preview = document.querySelector('.preview');
+                preview.parentNode.insertBefore(controlsDiv, preview);
+                
+                // Add event listener to the apply button
+                document.getElementById('applySettings').addEventListener('click', function() {
+                    if (lastLoadedImage) {
+                        analyzeImage(lastLoadedImage);
+                    }
+                });
+            }
+            
+            // Get the selected settings
+            const reductionFactor = parseInt(document.getElementById('pixelReduction').value, 10);
+            const colorDepth = parseInt(document.getElementById('colorDepth').value, 10);
+            
+            // Calculate the new dimensions (ensure at least 1 pixel in each dimension)
+            const newWidth = Math.max(1, Math.floor(originalWidth / reductionFactor));
+            const newHeight = Math.max(1, Math.floor(originalHeight / reductionFactor));
+            
+            // Set canvas size to these new reduced dimensions
+            canvas.width = newWidth;
+            canvas.height = newHeight;
+            
+            // Apply pixelation effect by drawing the image at the reduced size
+            ctx.drawImage(image, 0, 0, newWidth, newHeight);
+            
+            // Get the image data at the reduced size
+            const imageData = ctx.getImageData(0, 0, newWidth, newHeight);
+            const data = imageData.data;
+            
+            // Apply color depth reduction if needed
+            if (colorDepth < 24) {
+                for (let i = 0; i < data.length; i += 4) {
+                    const [r, g, b] = simplifyColor(data[i], data[i + 1], data[i + 2], colorDepth);
+                    data[i] = r;
+                    data[i + 1] = g;
+                    data[i + 2] = b;
+                }
+                
+                // Put the modified data back
+                ctx.putImageData(imageData, 0, 0);
+            }
+            
+            // Store the new dimensions
+            imageWidth = newWidth;
+            imageHeight = newHeight;
+            
+            // Clear previous pixel data
+            pixelData = [];
+            
+            // Analyze each pixel in our reduced image
+            for (let y = 0; y < newHeight; y++) {
+                for (let x = 0; x < newWidth; x++) {
+                    const index = (y * newWidth + x) * 4;
+                    const r = data[index];
+                    const g = data[index + 1];
+                    const b = data[index + 2];
+                    const a = data[index + 3];
+                    
+                    // Only store non-transparent pixels
+                    if (a > 20) { // Ignore very transparent pixels
+                        // Convert RGB to hex
+                        const hex = rgbToHex(r, g, b);
+                        
+                        // Add pixel to data array
+                        pixelData.push({
+                            x: x,
+                            y: y,
+                            color: hex,
+                            alpha: a / 255
+                        });
+                    }
+                }
+            }
+            
+            // Display the image on the preview canvas
+            const previewCanvas = document.getElementById('previewCanvas');
+            const previewCtx = previewCanvas.getContext('2d');
+            
+            // Clear previous content
+            previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+            
+            // Calculate scale to fit the preview canvas
+            const scale = Math.min(
+                previewCanvas.width / newWidth,
+                previewCanvas.height / newHeight
+            );
+            
+            // Calculate centered position
+            const x = (previewCanvas.width - newWidth * scale) / 2;
+            const y = (previewCanvas.height - newHeight * scale) / 2;
+            
+            // Draw the pixelated image scaled and centered
+            previewCtx.imageSmoothingEnabled = false; // Keep pixelated look
+            previewCtx.drawImage(canvas, x, y, newWidth * scale, newHeight * scale);
+            
+            // Count the number of unique colors
+            const uniqueColors = new Set(pixelData.map(p => p.color)).size;
+            
+            // Add information about the original and new dimensions
+            previewCtx.fillStyle = '#000';
+            previewCtx.font = '12px Arial';
+            previewCtx.fillText(`Original: ${originalWidth}x${originalHeight}`, 10, previewCanvas.height - 50);
+            previewCtx.fillText(`Simplified: ${newWidth}x${newHeight} (${Math.round(100/reductionFactor)}%)`, 10, previewCanvas.height - 30);
+            previewCtx.fillText(`Colors: ${uniqueColors} (${colorDepth}-bit)`, 10, previewCanvas.height - 10);
+            
+            // Generate the code and display it
+            generateCanvasCode(reductionFactor, colorDepth, uniqueColors);
+        }
+        
+        // Function to convert RGB values to hex
+        function rgbToHex(r, g, b) {
+            return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+        }
+        
+        // Function to generate canvas drawing code
+        function generateCanvasCode(reductionFactor, colorDepth, uniqueColors) {
+            // Start building the code
+            let code = `// Function to create the sprite on a canvas
+// Optimized with ${reductionFactor}x pixel reduction and ${colorDepth}-bit color (${uniqueColors} unique colors)
+function createSprite() {
+    const canvas = document.createElement('canvas');
+    
+    // Original image was simplified for efficiency
+    // Original dimensions would have been ${imageWidth * reductionFactor}x${imageHeight * reductionFactor}
+    canvas.width = ${imageWidth};
+    canvas.height = ${imageHeight};
+    const ctx = canvas.getContext('2d');
+    
+    // Disable image smoothing for crisp pixel art
+    ctx.imageSmoothingEnabled = false;
+    
+    // Clear canvas with transparent background
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    `;
+            
+            // Group pixels by color
+            const colorGroups = {};
+            
+            pixelData.forEach(pixel => {
+                if (!colorGroups[pixel.color]) {
+                    colorGroups[pixel.color] = [];
+                }
+                colorGroups[pixel.color].push({ x: pixel.x, y: pixel.y, alpha: pixel.alpha });
+            });
+            
+            let totalOperations = 0;
+            
+            // For each color, find rectangular regions instead of individual pixels
+            for (const color in colorGroups) {
+                const pixels = colorGroups[color];
+                
+                // Add comment for the color
+                code += `    // Draw regions with color ${color}\n`;
+                code += `    ctx.fillStyle = '${color}';\n`;
+                
+                // If all pixels in this group have the same alpha, set globalAlpha once
+                const allSameAlpha = pixels.every(p => p.alpha === pixels[0].alpha);
+                if (allSameAlpha && pixels[0].alpha < 1) {
+                    code += `    ctx.globalAlpha = ${pixels[0].alpha.toFixed(2)};\n`;
+                }
+                
+                // Create a matrix representing the image for this color
+                const matrix = Array(imageHeight).fill().map(() => Array(imageWidth).fill(false));
+                
+                // Mark all pixels of this color in the matrix
+                pixels.forEach(pixel => {
+                    matrix[pixel.y][pixel.x] = true;
+                });
+                
+                // Array to keep track of processed pixels
+                const processed = Array(imageHeight).fill().map(() => Array(imageWidth).fill(false));
+                
+                // Find largest possible rectangles
+                for (let y = 0; y < imageHeight; y++) {
+                    for (let x = 0; x < imageWidth; x++) {
+                        if (matrix[y][x] && !processed[y][x]) {
+                            // Find the largest rectangle starting at (x, y)
+                            let width = 1;
+                            let height = 1;
+                            
+                            // Expand horizontally
+                            while (x + width < imageWidth && matrix[y][x + width] && !processed[y][x + width]) {
+                                width++;
+                            }
+                            
+                            // Try to expand vertically
+                            let canExpandVertically = true;
+                            while (canExpandVertically && y + height < imageHeight) {
+                                for (let i = 0; i < width; i++) {
+                                    if (!matrix[y + height][x + i] || processed[y + height][x + i]) {
+                                        canExpandVertically = false;
+                                        break;
+                                    }
+                                }
+                                if (canExpandVertically) {
+                                    height++;
+                                }
+                            }
+                            
+                            // Mark all pixels in this rectangle as processed
+                            for (let j = 0; j < height; j++) {
+                                for (let i = 0; i < width; i++) {
+                                    processed[y + j][x + i] = true;
+                                }
+                            }
+                            
+                            // Only add rectangles that are big enough to be worth it (at least 4 pixels)
+                            if (width * height >= 4 || width >= 3 || height >= 3) {
+                                code += `    ctx.fillRect(${x}, ${y}, ${width}, ${height});\n`;
+                                totalOperations++;
+                            }
+                        }
+                    }
+                }
+                
+                // Handle individual pixels or small groups that weren't processed
+                let smallPixelsCode = '';
+                let smallPixelCount = 0;
+                
+                for (let y = 0; y < imageHeight; y++) {
+                    for (let x = 0; x < imageWidth; x++) {
+                        if (matrix[y][x] && !processed[y][x]) {
+                            smallPixelsCode += `    ctx.fillRect(${x}, ${y}, 1, 1);\n`;
+                            processed[y][x] = true;
+                            smallPixelCount++;
+                        }
+                    }
+                }
+                
+                // If there are too many small pixels, try to combine some into horizontal lines
+                if (smallPixelCount > 100) {
+                    // Reset the processed array for small pixels
+                    const processedSmall = Array(imageHeight).fill().map(() => Array(imageWidth).fill(false));
+                    smallPixelsCode = '';
+                    smallPixelCount = 0;
+                    
+                    // Find horizontal lines
+                    for (let y = 0; y < imageHeight; y++) {
+                        let lineStart = -1;
+                        let lineLength = 0;
+                        
+                        for (let x = 0; x < imageWidth; x++) {
+                            if (matrix[y][x] && !processed[y][x]) {
+                                if (lineStart === -1) {
+                                    lineStart = x;
+                                }
+                                lineLength++;
+                                processedSmall[y][x] = true;
+                            } else if (lineStart !== -1) {
+                                // End of a line
+                                if (lineLength > 1) {
+                                    smallPixelsCode += `    ctx.fillRect(${lineStart}, ${y}, ${lineLength}, 1);\n`;
+                                    smallPixelCount++;
+                                } else {
+                                    smallPixelsCode += `    ctx.fillRect(${lineStart}, ${y}, 1, 1);\n`;
+                                    smallPixelCount++;
+                                }
+                                lineStart = -1;
+                                lineLength = 0;
+                            }
+                        }
+                        
+                        // Handle case where line extends to edge
+                        if (lineStart !== -1) {
+                            if (lineLength > 1) {
+                                smallPixelsCode += `    ctx.fillRect(${lineStart}, ${y}, ${lineLength}, 1);\n`;
+                                smallPixelCount++;
+                            } else {
+                                smallPixelsCode += `    ctx.fillRect(${lineStart}, ${y}, 1, 1);\n`;
+                                smallPixelCount++;
+                            }
+                        }
+                    }
+                }
+                
+                code += smallPixelsCode;
+                totalOperations += smallPixelCount;
+                
+                // Reset global alpha if it was changed
+                if (!allSameAlpha || pixels[0].alpha < 1) {
+                    code += `    ctx.globalAlpha = 1.0;\n`;
+                }
+                
+                code += '\n';
+            }
+            
+            // Complete the function
+            code += `    // Total drawing operations: ${totalOperations}\n`;
+            code += `    return canvas;
+}
+
+// Usage example:
+// const spriteCanvas = createSprite();
+// ctx.drawImage(spriteCanvas, x, y);
+`;
+            
+            // Display the generated code
+            document.getElementById('outputCode').value = code;
+            
+            // Add warning if still too many operations
+            if (totalOperations > 500) {
+                alert(`Warning: Generated code has ${totalOperations} drawing operations. This may cause performance issues. Consider using a smaller or simpler image.`);
+            }
+        }
+        
+        // Event listener for image upload
+        document.getElementById('imageInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file && file.type === 'image/png') {
+                const reader = new FileReader();
+                
+                reader.onload = function(event) {
+                    const img = new Image();
+                    img.onload = function() {
+                        analyzeImage(img);
+                    };
+                    img.src = event.target.result;
+                };
+                
+                reader.readAsDataURL(file);
+            } else {
+                alert('Please select a PNG file.');
+            }
+        });
+        
+        // Event listener for copy button
+        document.getElementById('copyBtn').addEventListener('click', function() {
+            const outputCode = document.getElementById('outputCode');
+            outputCode.select();
+            document.execCommand('copy');
+            alert('Code copied to clipboard!');
+        });
+        
+        // Event listener for download button
+        document.getElementById('downloadBtn').addEventListener('click', function() {
+            const code = document.getElementById('outputCode').value;
+            const blob = new Blob([code], { type: 'text/javascript' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'sprite_code.js';
+            document.body.appendChild(a);
+            a.click();
+            
+            // Cleanup
+            setTimeout(() => {
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }, 100);
+        });
+    </script>
+</body>
+</html> 

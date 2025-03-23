@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Joystick Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background-color: #333;
+            color: white;
+            touch-action: none;
+            overflow: hidden;
+        }
+        
+        #container {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        #debug-info {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 100;
+        }
+        
+        #joystick-container {
+            position: fixed;
+            bottom: 50px;
+            right: 50px;
+            width: 150px;
+            height: 150px;
+            z-index: 1000;
+            touch-action: none;
+        }
+        
+        #joystick-base {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(255, 204, 0, 0.5);
+        }
+        
+        #joystick-handle {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #ff7700;
+            border: 3px solid white;
+            border-radius: 50%;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.8);
+        }
+        
+        #directions {
+            margin-top: 20px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <h1>Joystick Test</h1>
+        <div id="debug-info">
+            <div>Active: <span id="active">false</span></div>
+            <div>X: <span id="x-value">0</span></div>
+            <div>Y: <span id="y-value">0</span></div>
+        </div>
+        
+        <div id="joystick-container">
+            <div id="joystick-base">
+                <div id="joystick-handle"></div>
+            </div>
+        </div>
+        
+        <div id="directions">
+            <p>Try to drag the joystick!</p>
+        </div>
+    </div>
+
+    <script>
+        // Get DOM elements
+        const joystickBase = document.getElementById('joystick-base');
+        const joystickHandle = document.getElementById('joystick-handle');
+        const activeDisplay = document.getElementById('active');
+        const xDisplay = document.getElementById('x-value');
+        const yDisplay = document.getElementById('y-value');
+        
+        // Variables to track joystick state
+        let active = false;
+        let centerX = 0;
+        let centerY = 0;
+        let maxDistance = 0;
+        let lastDeltaX = 0;
+        let lastDeltaY = 0;
+        
+        // Calculate joystick center and radius
+        function calculateJoystickDimensions() {
+            const rect = joystickBase.getBoundingClientRect();
+            centerX = rect.left + rect.width / 2;
+            centerY = rect.top + rect.height / 2;
+            maxDistance = rect.width / 2;
+        }
+        
+        // Handle joystick movement
+        function moveJoystick(clientX, clientY) {
+            // Calculate delta from center
+            let deltaX = clientX - centerX;
+            let deltaY = clientY - centerY;
+            
+            // Calculate distance using Pythagorean theorem
+            const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+            
+            // Limit movement to joystick radius
+            if (distance > maxDistance) {
+                const ratio = maxDistance / distance;
+                deltaX *= ratio;
+                deltaY *= ratio;
+            }
+            
+            // Position handle - convert to percentage
+            const left = 50 + (deltaX / maxDistance) * 50;
+            const top = 50 + (deltaY / maxDistance) * 50;
+            
+            // Update joystick handle position
+            joystickHandle.style.left = left + '%';
+            joystickHandle.style.top = top + '%';
+            
+            // Store normalized values (-1 to 1)
+            lastDeltaX = deltaX / maxDistance;
+            lastDeltaY = deltaY / maxDistance;
+            
+            // Update debug display
+            xDisplay.textContent = lastDeltaX.toFixed(2);
+            yDisplay.textContent = lastDeltaY.toFixed(2);
+        }
+        
+        // Reset joystick
+        function resetJoystick() {
+            joystickHandle.style.left = '50%';
+            joystickHandle.style.top = '50%';
+            
+            lastDeltaX = 0;
+            lastDeltaY = 0;
+            active = false;
+            
+            // Update debug display
+            activeDisplay.textContent = 'false';
+            xDisplay.textContent = '0';
+            yDisplay.textContent = '0';
+        }
+        
+        // ---- Touch Event Handlers ----
+        
+        // Handle touch start
+        function handleTouchStart(event) {
+            event.preventDefault();
+            
+            if (event.touches.length === 0) return;
+            
+            // Calculate dimensions
+            calculateJoystickDimensions();
+            
+            // Set active state
+            active = true;
+            activeDisplay.textContent = 'true';
+            
+            // Move joystick
+            moveJoystick(event.touches[0].clientX, event.touches[0].clientY);
+        }
+        
+        // Handle touch move
+        function handleTouchMove(event) {
+            if (!active || event.touches.length === 0) return;
+            
+            event.preventDefault();
+            
+            // Move joystick
+            moveJoystick(event.touches[0].clientX, event.touches[0].clientY);
+        }
+        
+        // Handle touch end
+        function handleTouchEnd() {
+            resetJoystick();
+        }
+        
+        // ---- Mouse Event Handlers (for desktop testing) ----
+        
+        // Handle mouse down
+        function handleMouseDown(event) {
+            event.preventDefault();
+            
+            // Calculate dimensions
+            calculateJoystickDimensions();
+            
+            // Set active state
+            active = true;
+            activeDisplay.textContent = 'true';
+            
+            // Move joystick
+            moveJoystick(event.clientX, event.clientY);
+            
+            // Add document-level event listeners
+            document.addEventListener('mousemove', handleMouseMove);
+            document.addEventListener('mouseup', handleMouseUp);
+        }
+        
+        // Handle mouse move
+        function handleMouseMove(event) {
+            if (!active) return;
+            
+            // Move joystick
+            moveJoystick(event.clientX, event.clientY);
+        }
+        
+        // Handle mouse up
+        function handleMouseUp() {
+            resetJoystick();
+            
+            // Remove document-level event listeners
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+        }
+        
+        // Add event listeners
+        joystickBase.addEventListener('touchstart', handleTouchStart, { passive: false });
+        document.addEventListener('touchmove', handleTouchMove, { passive: false });
+        document.addEventListener('touchend', handleTouchEnd, { passive: false });
+        
+        joystickBase.addEventListener('mousedown', handleMouseDown);
+        
+        // Initialize joystick in center position
+        resetJoystick();
+    </script>
+</body>
+</html> 

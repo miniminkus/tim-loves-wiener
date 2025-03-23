@@ -1,0 +1,15 @@
+{
+  "name": "tim-loves-wieners",
+  "version": "1.0.0",
+  "description": "A game where Tim collects wieners to help him sleep",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": "18.x"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+} 

@@ -1,0 +1,641 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Press Start 2P', 'Courier New', monospace;
+    background-color: #121212;
+    color: #ffffff;
+    overflow: hidden;
+    touch-action: none;
+    text-shadow: 2px 2px 0 #000000;
+}
+
+#game-container {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    background-color: #000;
+}
+
+.screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-color: #000;
+    color: #fff;
+    font-family: 'Press Start 2P', cursive;
+}
+
+#intro-screen {
+    display: flex;
+}
+
+#game-screen {
+    display: none;
+}
+
+#victory-screen {
+    display: none;
+}
+
+#game-over-screen {
+    display: none;
+}
+
+.hidden {
+    display: none !important;
+}
+
+h1 {
+    font-size: 2.5rem;
+    margin-bottom: 20px;
+    color: #ffcc00;
+    text-shadow: 4px 4px 0 #ff5500, 8px 8px 0 #000000;
+    -webkit-text-stroke: 2px #000;
+    letter-spacing: 2px;
+}
+
+h2 {
+    font-size: 2rem;
+    margin-bottom: 20px;
+    color: #ffcc00;
+    text-shadow: 3px 3px 0 #ff5500, 6px 6px 0 #000000;
+    -webkit-text-stroke: 1px #000;
+}
+
+button {
+    background-color: #ff5500;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    font-size: 1.2rem;
+    margin-top: 20px;
+    cursor: pointer;
+    border-radius: 4px;
+    font-family: 'Press Start 2P', 'Courier New', monospace;
+    font-weight: bold;
+    box-shadow: 0 6px 0 #cc4400, 0 8px 10px rgba(0, 0, 0, 0.5);
+    text-shadow: 2px 2px 0 #000000;
+    transition: all 0.1s;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    min-width: 150px;
+    min-height: 60px;
+}
+
+button:active {
+    transform: translateY(6px);
+    box-shadow: 0 0 0 #cc4400, 0 1px 5px rgba(0, 0, 0, 0.5);
+}
+
+#intro-text {
+    font-size: 1.2rem;
+    max-width: 600px;
+    margin-bottom: 20px;
+    line-height: 1.5;
+}
+
+#game-story {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10;
+    background-color: rgba(0, 0, 0, 0.8);
+    padding: 20px;
+    border-radius: 8px;
+    border: 3px solid #ffcc00;
+    max-width: 80%;
+    font-size: 1.2rem;
+    color: #ffffff;
+    text-align: center;
+    display: none;
+    line-height: 1.5;
+    box-shadow: 0 0 20px rgba(255, 204, 0, 0.6);
+}
+
+#game-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+#hud {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 250px;
+}
+
+#controls {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 9998;
+    pointer-events: none;
+    display: flex;
+    justify-content: flex-end;
+    align-items: flex-end;
+    padding: 0;
+    touch-action: none;
+    width: auto;
+}
+
+#joystick-container {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+#joystick-base {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.3);
+    border: 3px solid rgba(255, 255, 255, 0.7);
+    border-radius: 50%;
+    left: 0;
+    top: 0;
+    box-shadow: 0 0 15px rgba(255, 204, 0, 0.5);
+    z-index: 10000;
+    touch-action: none !important;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+#joystick-handle {
+    position: absolute;
+    width: 60px;
+    height: 60px;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    background-color: #ff7700;
+    border: 3px solid white;
+    border-radius: 50%;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+    z-index: 10001;
+    pointer-events: none;
+    touch-action: none !important;
+}
+
+#shoot-button {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    width: 80px;
+    height: 80px;
+    background: radial-gradient(#ff0000, #cc0000);
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    box-shadow: 0 6px 0 #990000, 0 8px 10px rgba(0, 0, 0, 0.5);
+    border: 3px solid rgba(255, 255, 255, 0.7);
+    touch-action: none !important;
+    pointer-events: auto !important;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    will-change: transform;
+    z-index: 10000;
+}
+
+#shoot-button span {
+    font-size: 0.8rem;
+    font-weight: bold;
+    color: white;
+    text-shadow: 1px 1px 0 #000000;
+    pointer-events: none;
+    user-select: none;
+}
+
+#shoot-button:active, 
+#shoot-button.active {
+    transform: translateY(6px);
+    box-shadow: 0 0 0 #990000, 0 2px 5px rgba(0, 0, 0, 0.5);
+    background: radial-gradient(#cc3300, #aa2200);
+}
+
+#spermidin-container,
+#health-bar-container {
+    display: none;
+    background-color: rgba(0, 0, 0, 0.7);
+    padding: 12px;
+    border-radius: 8px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    margin-bottom: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+    min-width: 240px;
+    overflow: hidden;
+}
+
+/* Health bar, Spermidin, and Boss UI styling */
+#health-bar-container, #health-bar, #health-value, #health-text,
+#spermidin-container, #spermidin-bar, #spermidin-value, #spermidin-text,
+#boss-health-container, #boss-health-bar, #boss-health-value, #boss-label {
+    position: relative;
+    z-index: 100;
+}
+
+#health-text, #spermidin-text, #boss-label {
+    display: inline-block;
+    margin-right: 10px;
+    font-size: 0.9rem;
+    letter-spacing: 1px;
+    text-shadow: 2px 2px 0 #000;
+    float: left;
+}
+
+#health-text {
+    color: #00cc00;
+}
+
+#spermidin-text {
+    color: #ffcc00;
+}
+
+#boss-label {
+    color: #ff3300;
+}
+
+#health-value, #spermidin-value, #boss-health-value {
+    display: inline-block;
+    float: right;
+    margin-right: 5px;
+    font-size: 0.9rem;
+    color: #ffffff;
+    letter-spacing: 1px;
+    text-shadow: 2px 2px 0 #000;
+}
+
+#spermidin-bar-wrapper, #health-bar-wrapper, #boss-health-bar-wrapper {
+    position: relative;
+    width: 100%;
+    height: 20px;
+    background-color: #222;
+    border: 3px solid #fff;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.7), 0 0 5px rgba(255, 255, 255, 0.3) inset;
+    overflow: hidden;
+    border-radius: 4px;
+}
+
+#health-bar {
+    background: linear-gradient(to right, #00cc00, #00ff00);
+    box-shadow: 0 0 10px rgba(0, 255, 0, 0.7) inset;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+#spermidin-bar, #boss-health-bar {
+    height: 100%;
+    width: 0%;
+    transition: width 0.3s ease;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+#spermidin-bar {
+    background: linear-gradient(to right, #ffcc00, #ff9900);
+    box-shadow: 0 0 10px rgba(255, 204, 0, 0.7) inset;
+}
+
+#boss-health-bar {
+    background: linear-gradient(to right, #ff3300, #ff0000);
+    box-shadow: 0 0 10px rgba(255, 0, 0, 0.7) inset;
+}
+
+#boss-health-container {
+    position: relative;
+    top: auto;
+    left: auto;
+    transform: none;
+    width: 100%;
+    display: none;
+    z-index: 101;
+    background-color: rgba(0, 0, 0, 0.7);
+    padding: 12px;
+    border-radius: 8px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    margin-bottom: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+    min-width: 240px;
+    overflow: hidden;
+}
+
+#sleep-animation {
+    width: 300px;
+    height: 200px;
+    margin: 20px 0;
+    position: relative;
+    background-color: rgba(0, 0, 255, 0.1);
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(255, 204, 0, 0.3);
+}
+
+.zzz {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 3rem;
+    font-weight: bold;
+    color: #ffcc00;
+    animation: float 2s infinite ease-in-out;
+    -webkit-text-stroke: 2px #000;
+    text-shadow: 3px 3px 5px rgba(0, 0, 0, 0.5);
+}
+
+@keyframes float {
+    0% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 0;
+    }
+    50% {
+        transform: translate(-60%, -70%) scale(1.5);
+        opacity: 1;
+    }
+    100% {
+        transform: translate(-70%, -90%) scale(2);
+        opacity: 0;
+    }
+}
+
+/* Nintendo DS style pixelated border */
+#game-screen::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border: 8px solid #212121;
+    z-index: 3;
+    pointer-events: none;
+    box-shadow: 0 0 0 4px #111111 inset;
+}
+
+/* Add pixel-art style to all text */
+p {
+    font-size: 1rem;
+    line-height: 1.5;
+    margin-bottom: 15px;
+    max-width: 600px;
+    image-rendering: pixelated;
+}
+
+/* Controls instructions for desktop */
+#keyboard-controls {
+    position: absolute;
+    top: 60px;
+    right: 20px;
+    z-index: 2;
+    background-color: rgba(0, 0, 0, 0.6);
+    padding: 10px;
+    border-radius: 5px;
+    border: 2px solid #ffcc00;
+    font-size: 0.7rem;
+    display: none;
+}
+
+@media (min-width: 768px) {
+    #keyboard-controls {
+        display: block;
+    }
+}
+
+#keyboard-controls p {
+    margin-bottom: 5px;
+}
+
+/* Enhanced graphics styles */
+.pixel-art {
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+}
+
+/* Increase visual appeal of game elements */
+#game-canvas {
+    filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.2));
+}
+
+/* Health bar clearfix */
+.clearfix:after {
+    content: "";
+    display: table;
+    clear: both;
+}
+
+/* Specific styling for the start button to make it more prominent */
+#start-button {
+    font-size: 1.5rem;
+    padding: 16px 32px;
+    background-color: #ff7700;
+    box-shadow: 0 8px 0 #cc4400, 0 10px 15px rgba(0, 0, 0, 0.6);
+    animation: pulse 1.5s infinite alternate;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+    }
+    100% {
+        transform: scale(1.05);
+    }
+}
+
+#start-button:active {
+    transform: translateY(8px);
+    box-shadow: 0 0 0 #cc4400, 0 1px 5px rgba(0, 0, 0, 0.5);
+    animation: none;
+}
+
+/* Safari-specific button fix */
+@supports (-webkit-touch-callout: none) {
+    button {
+        cursor: pointer;
+        -webkit-appearance: none;
+        -webkit-tap-highlight-color: transparent;
+        outline: none;
+        padding: 16px 32px !important;
+        transform: translateZ(0);
+    }
+    
+    #start-button {
+        padding: 20px 40px !important;
+        border-radius: 8px;
+    }
+    
+    /* Disable double-tap zooming */
+    body {
+        touch-action: manipulation;
+    }
+    
+    /* Ensure visible active state */
+    button:active {
+        background-color: #cc4400 !important;
+        transform: translateY(6px) translateZ(0);
+    }
+}
+
+/* Additional active state for Safari */
+button:active, 
+button.active,
+#shoot-button:active,
+#shoot-button.active {
+    background-color: #cc4400;
+}
+
+/* Safari-specific display fixes */
+@supports (-webkit-touch-callout: none) {
+    /* Add padding to top to account for Safari address bar */
+    #game-container {
+        padding-top: 40px; /* Add padding to account for Safari address bar */
+    }
+    
+    /* Ensure shoot button is high enough to avoid bottom UI */
+    #shoot-button {
+        bottom: 40px; /* Position higher to avoid bottom UI elements */
+    }
+    
+    /* Ensure joystick overlay is high enough to avoid bottom UI */
+    #joystick-overlay {
+        bottom: 40px; /* Position higher to avoid bottom UI elements */
+    }
+    
+    /* Rest of Safari fixes remain unchanged */
+    #game-screen {
+        display: none;
+    }
+    
+    /* Other existing Safari fixes... */
+    #game-screen.active,
+    #game-screen[style*="display: block"] {
+        display: block !important;
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        z-index: 1 !important;
+        background-color: #000 !important;
+    }
+    
+    #game-canvas {
+        display: block !important;
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        z-index: 1 !important;
+        background-color: #000 !important;
+        -webkit-transform: translateZ(0);
+        transform: translateZ(0);
+    }
+    
+    #controls {
+        display: flex !important;
+        position: absolute !important;
+        bottom: 20px !important;
+        left: 0 !important;
+        right: 0 !important;
+        z-index: 1000 !important;
+        pointer-events: auto !important;
+        touch-action: auto !important;
+    }
+    
+    #joystick-container,
+    #joystick-base,
+    #shoot-button {
+        touch-action: none !important;
+        -webkit-touch-callout: none !important;
+        -webkit-user-select: none !important;
+        pointer-events: auto !important;
+    }
+}
+
+/* Safari-specific fixes for controls */
+@supports (-webkit-touch-callout: none) {
+    #joystick-container, 
+    #joystick-base,
+    #shoot-button {
+        pointer-events: auto !important;
+        touch-action: none !important;
+        -webkit-tap-highlight-color: transparent;
+    }
+}
+
+/* Make sure controls are always displayed on top in mobile */
+#controls {
+    display: flex !important;
+    position: absolute !important;
+    bottom: 20px !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 1000 !important;
+    pointer-events: auto !important;
+}
+
+/* Joystick overlay - completely separate from the game */
+#joystick-overlay {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 120px;
+    height: 120px;
+    z-index: 10000;
+    pointer-events: auto;
+    touch-action: none;
+    user-select: none;
+}
+
+#overlay-joystick-base {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.3);
+    border: 3px solid rgba(255, 255, 255, 0.7);
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 0 15px rgba(255, 204, 0, 0.5);
+    z-index: 10001;
+    touch-action: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+#overlay-joystick-handle {
+    position: absolute;
+    width: 60px;
+    height: 60px;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    background-color: #ff7700;
+    border: 3px solid white;
+    border-radius: 50%;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+    z-index: 10002;
+    pointer-events: none;
+} 
